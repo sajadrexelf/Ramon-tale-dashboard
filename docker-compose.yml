@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      ECONCONTENT_DB_HOST: db
+      ECONCONTENT_DB_PORT: 5432
+    volumes:
+      - ./data:/app/data
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${ECONCONTENT_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${ECONCONTENT_DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${ECONCONTENT_DB_NAME:-econcontent}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ECONCONTENT_DB_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  db_data:
